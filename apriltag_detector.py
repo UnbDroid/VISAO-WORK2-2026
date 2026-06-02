@@ -9,8 +9,8 @@ class AprilTagDetector:
         )
 
     def detect(self, frame):
-
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
         results = self.detector.detect(gray)
         tags = []
 

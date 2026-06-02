@@ -1,11 +1,8 @@
 class CubeDetector:
-
     def __init__(self, color_detector):
-
         self.color_detector = color_detector
 
     def detect_cubes(self, frame, tags):
-
         h, w = frame.shape[:2]
 
         cubes = []
