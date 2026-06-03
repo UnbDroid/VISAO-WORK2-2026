@@ -29,7 +29,7 @@ if not ok:
     print('Não foi possível ler o arquivo de vídeo')
     sys.exit() 
 
-# CLASSE DE DETECÇÃO   
+# CLASSES DE DETECÇÃO   
 class AprilTagDetector:
     def __init__(self):
         # usando biblioteca apriltag nativa
@@ -38,9 +38,11 @@ class AprilTagDetector:
 
         # parâmetros da câmera e tamanho da tag
         self.camera_params = [1121.40, 118.81, 649.17, 364.85]  # [fx, fy, cx, cy]
-        self.tag_size = 0.06  # 6 centímetros
+        self.tag_size = 0.04  # 4 centímetros
 
     def detect(self, frame):
+        if frame is None:
+            return []
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         results = self.detector.detect(gray)
         tags = []
@@ -68,21 +70,18 @@ class CubeDetector:
         self.color_detector = color_detector
 
     def detect_cubes(self, frame, tags):
-        h, w = frame.shape[:2]
-
         # SE NÃO ACHAR NENHUMA TAG, AVISA QUE FALHOU
-        if len(tags) == 0:
+        if frame is None or len(tags) == 0:
             return None 
 
-        for tag in tags:
-            
-            cx, cy = tag["center"]
+        h, w = frame.shape[:2]
 
-            size = 80
+        for tag in tags:
+            cx, cy = tag["center"]
+            size = 50
 
             x1 = max(cx - size, 0)
             x2 = min(cx + size, w)
-
             y1 = max(cy - size, 0)
             y2 = min(cy + size, h)
         
@@ -99,8 +98,9 @@ class CubeDetector:
 # INICIALIZANDO O RASTREADOR
 tag_detector = AprilTagDetector()
 cube_detector = CubeDetector()
+colors = (randint(0, 255), randint(0, 255), randint(0, 255))
 
-resultado = cube_detector.detect_cubes(frame, tag_detector.detect(frame))
+'''resultado = cube_detector.detect_cubes(frame, tag_detector.detect(frame))
 
 if resultado is None:
     print("Nenhuma AprilTag encontrada no primeiro frame do vídeo. Tentará detectar no loop.")
@@ -112,59 +112,48 @@ else:
     print(f"Apriltag encontrada! Cubo inicial em: X={pose_3d[0]:.2f}m, Y={pose_3d[1]:.2f}m, Z={pose_3d[2]:.2f}m")
 
 colors = (randint(0, 255), randint(0, 255), randint(0, 255))
-
+'''
 
 # LOOP PRINCIPAL
 while True:
     ok, frame = video.read()
-    if not ok:
+    if not ok or frame is None:
         break
 
+    # registra o tempo incial do frame
     timer = cv2.getTickCount()
 
-    if rastreando:
-        # se estiver rastreando, atualiza o tracker CSRT
-        ok_tracker, bbox = tracker.update(frame)
+    # Detecta as tags no frame atual
+    tags_encontradas = tag_detector.detect(frame)
+    resultado = cube_detector.detect_cubes(frame, tags_encontradas)
 
-        if ok_tracker:
-            (x, y, w, h) = [int(v) for v in bbox]
-            cv2.rectangle(frame, (x, y), (x + w, y+ h), colors, 2, 1)
+    if resultado is not None:
+        # se encontrou a tag, desenha a caixa e mostra a distância 3D
+        bbox, pose_3d = resultado
+        (x, y, w, h) = [int(v) for v in bbox]
+        
+        # desenha o retângulo ao redor do cubo
+        cv2.rectangle(frame, (x, y), (x + w, y + h), colors, 2, 1)
+        
+        # mostra as coordenadas 3D na tela e no terminal
+        x_m, y_m, z_m = pose_3d
+        cv2.putText(frame, f"X:{x_m:.2f}m Y:{y_m:.2f}m Z:{z_m:.2f}m", (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+        
+        cv2.putText(frame, "STATUS: RASTREANDO", (100, 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, .75, (50, 170, 50), 2)
+    else:
+        # se não encontrou nenhuma tag, avisa na tela e continua procurando no próximo frame
+        cv2.putText(frame, "STATUS: BUSCANDO CUBO...", (100, 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, .75, (0, 0, 255), 2)
 
-            # rodando a detecção de pose em background p/ manter a distãncia atualizada
-            tags = tag_detector.detect(frame)
-            if tags:
-                x_m, y_m, z_m = tags[0]["pose_3d"]
-                cv2.putText(frame, f"Dist: {z_m:.2f}m", (x, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-                print(f"Rastreando - Cubo a: X={x_m:.2f}m, Y={y_m:.2f}m, Z={z_m:.2f}m")
-            else:
-                # se o tracker falhou, desativa o modo de rastreamento para forçar a redetecção
-                rastreando = False
-                print("Rastreamento perdido. Tentando redetectar a AprilTag...")
-
-        if not rastreando:
-            # se não estiver rastreando (ou perdeu), tenta detectar a tag novamente
-            resultado = cube_detector.detect_cubes(frame, tag_detector.detect(frame))
-
-            if resultado is not None:
-                bbox, pose3d =  resultado
-                # reinicializa o tracker com a nova posição encontrada
-                tracker = cv2.TrackerCSRT_create()
-                tracker.init(frame, bbox)
-                rastreando = True
-                print(f"Tag recuperada! Novo ponto: X={pose_3d[0]:.2f}m, Y={pose_3d[1]:.2f}m, Z={pose_3d[2]:.2f}m")
-            else:
-                cv2.putText(frame, 'Buscando AprilTag...', (100, 80),
-                        cv2.FONT_HERSHEY_SIMPLEX, .75, (0, 0, 255), 2)
-                
-        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
-                
-        # textos informativos n tela!!!!!!
-        cv2.putText(frame, nome_tracker + ' Tracker', (100, 20),
-                cv2.FONT_HERSHEY_SIMPLEX, .75, (50, 170, 50), 2)
+    # cálculo de FPS
+    dt = (cv2.getTickCount() - timer) / cv2.getTickFrequency()
+    if dt > 0:
+        fps = 1.0 / dt
 
     cv2.putText(frame, 'FPS: ' + str(int(fps)), (100, 50),
-                cv2.FONT_HERSHEY_SIMPLEX, .75, (50, 170, 50), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, .75, (255, 255, 255), 2)
 
     cv2.imshow('Tracking', frame)
     if cv2.waitKey(1) & 0XFF == 27: # Esc para sair
