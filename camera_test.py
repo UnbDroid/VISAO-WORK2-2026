@@ -1,13 +1,13 @@
 import cv2
 
-cap = cv2.VideoCapture(3)
-print("Câmera abriu?", cap.isOpened())
-ret, frame = cap.read()
-print("Frame capturado?", ret)
+video = cv2.VideoCapture(3)
+print("Câmera abriu?", video.isOpened())
+ok, frame = video.read()
+print("Frame capturado?", ok)
 
 while True:
 
-    ok, frame = cap.read()
+    ok, frame = video.read()
     if not ok:
         break
 
@@ -16,4 +16,4 @@ while True:
     if k == 27:
         break
 
-cap.release()
+video.release()
