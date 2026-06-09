@@ -9,5 +9,3 @@ cv2.imwrite("saidafotofita.jpeg", imagem)
 (B,G,R)=imagem[0,0]
 print(B,G,R) 
 cv2.destroyAllWindows()
-
- 
