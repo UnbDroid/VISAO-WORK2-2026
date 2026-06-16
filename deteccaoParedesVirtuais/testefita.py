@@ -44,51 +44,89 @@ while True:
     imgResultado = frame.copy() # cópia p/ desenhar os resultados finais
 
     centros = []
-    listras_detectadas = 0
+    listras_detectadas = 0 
 
-    print(f"Contornos totais encontrados pelo Canny: {len(objetos)}")
+    #definindo parametros de uma fita para que ela seja detectada
+    
+    continuidade_p = False
+     # quadrilatero_p: se o contorno tem 4 vertices, cor_p: se a cor no centro é vermelha, continuidade_p: se a proporção entre os lados é próxima da proporção_predefinida (ex: 2.0 para uma fita de 20cm x 10cm)
+
+    #lista contendo os vertices das possiveis listras detectadas:
+    vertices_listras = []
+    #print(f"Contornos totais encontrados pelo Canny: {len(objetos)}")
 
     for contorno in objetos:
+        quadrilatero_p = False
+        cor_p = False
+        proporcao_p = False
         # calcula o perimetro do contorno
         perimetro = cv2.arcLength(contorno, True) # True significa que o contorno é fechado
 
         # approxPolyDP aproxima a forma geométrica
         # 0.04 (4% do perímetro) é uma tolerância comum para detectar retângulos
         aproximacao = cv2.approxPolyDP(contorno, 0.04 * perimetro, True)
-    
+        
+         
         # se a aprox. tem 4 vertices, significa que temos um quadrilátero (uma lista da fita!!)
         # > 100 é um # > 100 é um filtro de área mínima p/ ignorar pequenos ruidos da imagemfiltro de área mínima p/ ignorar pequenos ruidos da imagem
         if len(aproximacao) == 4 and cv2.contourArea(contorno) > 100:
-            listras_detectadas += 1     
-        
+            quadrilatero_p = True
+            
+            #Pegando os tres primeiros vertices para calcular os angulos
+            v1 = aproximacao[0][0]
+            v2 = aproximacao[1][0]
+            v3 = aproximacao[2][0]
+            
+            d1=math.sqrt((v1[0] - v2[0])**2 + (v2[1] - v1[1])**2)
+            d2=math.sqrt((v2[0] - v3[0])**2 + (v3[1] - v2[1])**2) 
+             
+            proporcao_p=d1/d2
+            print(f"Proporção entre os lados: {proporcao_p:.2f}")
+            #proporção_predefinida da fita então precisa testar primeiro
+
+            #if proporção=proporção_predefinida:
+            #    proporção_p = True
+            #listras_detectadas += 1 #colocar como condicao para analisar os centros depois
             cv2.drawContours(imgResultado, [aproximacao], -1, (0, 255, 0), 2)
 
-        print(f'\n-> Listra #{listras_detectadas} detectada')
-        print(f'Vértices:\n{aproximacao}')
+        #print(f'\n-> Listra #{listras_detectadas} detectada')
+        print(f'Vértices:\n{aproximacao}') 
 
-        # encontrar o centro usando momentos da imagem
+        # encontrar o centro usando momentos da imagem 
+        #if proporcao_p:
         M = cv2.moments(contorno)
         if M["m00"] != 0:
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
-            centros.append((cx, cy))
-
-            cv2.circle(imgResultado, (cx, cy), 5, (255, 0, 0), -1)
 
             cor_bgr = frame[cy, cx]
             print(f"Cor original no centro (BGR): {cor_bgr}")
+            if cor_bgr[2] > 150 and cor_bgr[0] < 100:
+                cor_p = True #Só fazendo os limites de vermelho
+            
+        if quadrilatero_p and cor_p and proporcao_p:
+            centros.append((cx, cy))
+            cv2.circle(imgResultado, (cx, cy), 5, (255, 0, 0), -1)
 
+            
     # cálculo das distâncias
 
     # ordenando os centros da esquerda p/ direita p/ garantir que vai medir a distancia entre listras consecutivas
-    centros = sorted(centros, key = lambda ponto: ponto[0])
+            centros = sorted(centros, key = lambda ponto: ponto[0])
+
+    lista_distancias=[]
 
     for i in range(len(centros) -1):
+        if proporcao_p == False or cor_p == False or quadrilatero_p == False:
+            print(f"-> A listra {i + 1} não atende aos critérios de detecção (quadrilátero: {quadrilatero_p}, cor: {cor_p}, proporção: {proporcao_p})")
+            continue
         p1 = centros[i]
         p2 = centros[ i + 1]
 
         # distância euclidiana: d = raiz((x2 - x1)^2 + (y2 - y1)^2)
+        
         distancia = math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
+        lista_distancias.append(distancia)
 
         cv2.line(imgResultado, p1, p2, (0, 255, 255), 2)
 
@@ -100,10 +138,9 @@ while True:
         
         print(f"Distância entre a listra {i + 1} e a listra {i + 2}: {distancia:.2f} pixels")
 
-
+    #for i in lista_distancias:
     cv2.imshow('Paredes Virtuais Detectadas', imgResultado)
     
-
     escreve(img, "Imagem em tons de cinza", 0)
     escreve(suave, "Suavizacao com Blur", 0)
     escreve(bin, "Binarizacao com Metodo Otsu", 255)
@@ -131,4 +168,4 @@ if ultimo_temp is not None:
     cv2.imshow("Todos os contornos encontrados", ultimo_frame)
     cv2.waitKey(0)
 
-cv2.destroyAllWindows
+cv2.destroyAllWindows()
