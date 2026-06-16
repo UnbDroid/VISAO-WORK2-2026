@@ -8,12 +8,19 @@ def escreve(img, texto, cor=(255,0,0)):
     fonte = cv2.FONT_HERSHEY_SIMPLEX
     cv2.putText(img, texto, (10,20), fonte, 0.5, cor, 0, cv2.LINE_AA)
 
-imgColorida = cv2.VideoCapture(2, cv2.CAP_V4L2)
+imgColorida = cv2.VideoCapture(0)
 print("Câmera abriu?", imgColorida.isOpened())
 
 if not imgColorida.isOpened():
     print('Não foi possível carregar o vídeo')
     sys.exit()
+
+    
+# DroidCam = app de sincronixação da câmera do celular da Lelê
+print("Aguardando o DroidCam sincronizar...")
+for i in range(30):
+    ok, frame = imgColorida.read()
+
 
 ok, frame = imgColorida.read()
 if not ok:
@@ -44,8 +51,8 @@ while True:
     imgResultado = frame.copy() # cópia p/ desenhar os resultados finais
 
     centros = []
-    listras_detectadas = 0
-
+    possiveis_listras_detectadas = 0
+    parametros = []
     print(f"Contornos totais encontrados pelo Canny: {len(objetos)}")
 
     for contorno in objetos:
@@ -59,11 +66,13 @@ while True:
         # se a aprox. tem 4 vertices, significa que temos um quadrilátero (uma lista da fita!!)
         # > 100 é um # > 100 é um filtro de área mínima p/ ignorar pequenos ruidos da imagemfiltro de área mínima p/ ignorar pequenos ruidos da imagem
         if len(aproximacao) == 4 and cv2.contourArea(contorno) > 100:
-            listras_detectadas += 1     
+            possiveis_listras_detectadas += 1  
+            parametros.append(True)
         
             cv2.drawContours(imgResultado, [aproximacao], -1, (0, 255, 0), 2)
-
-        print(f'\n-> Listra #{listras_detectadas} detectada')
+        else:
+            parametros.append(False)
+        print(f'\n-> Listra #{possiveis_listras_detectadas} detectada')
         print(f'Vértices:\n{aproximacao}')
 
         # encontrar o centro usando momentos da imagem
@@ -77,6 +86,8 @@ while True:
 
             cor_bgr = frame[cy, cx]
             print(f"Cor original no centro (BGR): {cor_bgr}")
+            if cor_bgr == [0, 0, 255]:  # vermelho puro
+                parametros.append(True)
 
     # cálculo das distâncias
 
@@ -99,7 +110,8 @@ while True:
             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
         
         print(f"Distância entre a listra {i + 1} e a listra {i + 2}: {distancia:.2f} pixels")
-
+        #se as distancias entre as linhas consecutivas forem as mesmas é pq são listras da mesma fita.
+        #if i 
 
     cv2.imshow('Paredes Virtuais Detectadas', imgResultado)
     
@@ -131,4 +143,4 @@ if ultimo_temp is not None:
     cv2.imshow("Todos os contornos encontrados", ultimo_frame)
     cv2.waitKey(0)
 
-cv2.destroyAllWindows
+cv2.destroyAllWindows                                                                       
