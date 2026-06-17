@@ -58,7 +58,7 @@ while True:
     for contorno in objetos:
         quadrilatero_p = False
         cor_p = False
-        proporcao_p = False
+        proporcao_p = None
         # calcula o perimetro do contorno
         perimetro = cv2.arcLength(contorno, True) # True significa que o contorno é fechado
 
@@ -66,12 +66,28 @@ while True:
         # 0.04 (4% do perímetro) é uma tolerância comum para detectar retângulos
         aproximacao = cv2.approxPolyDP(contorno, 0.04 * perimetro, True)
         
+
+        # encontrar o centro usando momentos da imagem 
+        #if proporcao_p:
+        M = cv2.moments(contorno)
+        if M["m00"] != 0:
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+
+            cor_bgr = frame[cy, cx]
+            print(f"Cor original no centro (BGR): {cor_bgr}")
+            if cor_bgr[2] > 150 and cor_bgr[0] < 100:
+                cor_p = True #Só fazendo os limites de vermelho
+            
+        # cálculo das distâncias
+
          
         # se a aprox. tem 4 vertices, significa que temos um quadrilátero (uma lista da fita!!)
-        # > 100 é um # > 100 é um filtro de área mínima p/ ignorar pequenos ruidos da imagemfiltro de área mínima p/ ignorar pequenos ruidos da imagem
-        if len(aproximacao) == 4 and cv2.contourArea(contorno) > 100:
+        # > 100 é um filtro de área mínima p/ ignorar pequenos ruidos da imagem
+        if len(aproximacao) == 4 and cv2.contourArea(contorno) > 100 and cor_p:
             quadrilatero_p = True
-            
+            print(f"quadrilatero_p = {quadrilatero_p}")
+
             #Pegando os tres primeiros vertices para calcular os angulos
             v1 = aproximacao[0][0]
             v2 = aproximacao[1][0]
@@ -88,43 +104,31 @@ while True:
             #    proporção_p = True
             #listras_detectadas += 1 #colocar como condicao para analisar os centros depois
             cv2.drawContours(imgResultado, [aproximacao], -1, (0, 255, 0), 2)
+        
+        else:
+            print(f"cor_p = {cor_p}")
+            print(f"aproximação = {aproximacao}!!!")
 
         #print(f'\n-> Listra #{listras_detectadas} detectada')
-        print(f'Vértices:\n{aproximacao}') 
+        #print(f'Vértices:\n{aproximacao}')
 
-        # encontrar o centro usando momentos da imagem 
-        #if proporcao_p:
-        M = cv2.moments(contorno)
-        if M["m00"] != 0:
-            cx = int(M["m10"] / M["m00"])
-            cy = int(M["m01"] / M["m00"])
-
-            cor_bgr = frame[cy, cx]
-            print(f"Cor original no centro (BGR): {cor_bgr}")
-            if cor_bgr[2] > 150 and cor_bgr[0] < 100:
-                cor_p = True #Só fazendo os limites de vermelho
-            
         if quadrilatero_p and cor_p and proporcao_p:
             centros.append((cx, cy))
-            cv2.circle(imgResultado, (cx, cy), 5, (255, 0, 0), -1)
-
-            
-    # cálculo das distâncias
+            cv2.circle(imgResultado, (cx, cy), 5, (255, 0, 0), -1) 
 
     # ordenando os centros da esquerda p/ direita p/ garantir que vai medir a distancia entre listras consecutivas
-            centros = sorted(centros, key = lambda ponto: ponto[0])
-
+    centros = sorted(centros, key = lambda ponto: ponto[0])
+    
     lista_distancias=[]
 
     for i in range(len(centros) -1):
-        if proporcao_p == False or cor_p == False or quadrilatero_p == False:
+        '''if proporcao_p == None or cor_p == False or quadrilatero_p == False:
             print(f"-> A listra {i + 1} não atende aos critérios de detecção (quadrilátero: {quadrilatero_p}, cor: {cor_p}, proporção: {proporcao_p})")
-            continue
+            continue'''
         p1 = centros[i]
         p2 = centros[ i + 1]
 
         # distância euclidiana: d = raiz((x2 - x1)^2 + (y2 - y1)^2)
-        
         distancia = math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
         lista_distancias.append(distancia)
 
