@@ -20,7 +20,7 @@ if not ok:
     print("Não foi possível ler o aquivo de vídeo")
     sys.exit()
 
-ultimo_temp = None
+ultimo_temp = None 
 ultimo_objetos = []
 
 while True:
@@ -55,6 +55,11 @@ while True:
     vertices_listras = []
     #print(f"Contornos totais encontrados pelo Canny: {len(objetos)}")
 
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    red_lower = np.array([0,120,70])
+    red_upper = np.array([10,255,255])
+    red_mask = cv2.inRange(hsv, red_lower, red_upper)
+
     for contorno in objetos:
         quadrilatero_p = False
         cor_p = False
@@ -62,25 +67,47 @@ while True:
         # calcula o perimetro do contorno
         perimetro = cv2.arcLength(contorno, True) # True significa que o contorno é fechado
 
-        # approxPolyDP aproxima a forma geométrica
         # 0.04 (4% do perímetro) é uma tolerância comum para detectar retângulos
         aproximacao = cv2.approxPolyDP(contorno, 0.04 * perimetro, True)
         
-
         # encontrar o centro usando momentos da imagem 
-        #if proporcao_p:
         M = cv2.moments(contorno)
         if M["m00"] != 0:
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
 
-            cor_bgr = frame[cy, cx]
-            print(f"Cor original no centro (BGR): {cor_bgr}")
-            if cor_bgr[2] > 150 and cor_bgr[0] < 100:
-                cor_p = True #Só fazendo os limites de vermelho
-            
-        # cálculo das distâncias
+            '''
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
+            red_lower = np.array([0,120,70])
+            red_upper = np.array([10,255,255])
+            green_lower = np.array([40,50,50])
+            green_upper = np.array([80,255,255])
+            blue_lower = np.array([100,150,0])
+            blue_upper = np.array([140,255,255])
+
+            red_mask = cv2.inRange(hsv, red_lower, red_upper)
+            green_mask = cv2.inRange(hsv, green_lower, green_upper)
+            blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
+
+            red_pixels = red_mask.sum()
+            green_pixels = green_mask.sum()
+            blue_pixels = blue_mask.sum()
+
+            cor_hsv = frame[cx, cy]
+            
+            print(f"Cor original no centro (HSV): {cor_hsv}")
+            if red_pixels > green_pixels and red_pixels > blue_pixels:
+                cor_p = True
+            '''
+
+            '''print(f"Cor original no centro (BGR): {cor_bgr}")
+            if cor_bgr[2] > 150 and cor_bgr[0] < 100:
+                cor_p = True #Só fazendo os limites de vermelho'''
+
+
+            if red_mask[cy, cx] > 0:
+                cor_p = True
          
         # se a aprox. tem 4 vertices, significa que temos um quadrilátero (uma lista da fita!!)
         # > 100 é um filtro de área mínima p/ ignorar pequenos ruidos da imagem
@@ -100,17 +127,15 @@ while True:
             print(f"Proporção entre os lados: {proporcao_p:.2f}")
             #proporção_predefinida da fita então precisa testar primeiro
 
-            #if proporção=proporção_predefinida:
-            #    proporção_p = True
-            #listras_detectadas += 1 #colocar como condicao para analisar os centros depois
+            '''if proporção=proporção_predefinida:
+                proporção_p = True
+            listras_detectadas += 1 #colocar como condicao para analisar os centros depois'''
+
             cv2.drawContours(imgResultado, [aproximacao], -1, (0, 255, 0), 2)
         
         else:
             print(f"cor_p = {cor_p}")
             print(f"aproximação = {aproximacao}!!!")
-
-        #print(f'\n-> Listra #{listras_detectadas} detectada')
-        #print(f'Vértices:\n{aproximacao}')
 
         if quadrilatero_p and cor_p and proporcao_p:
             centros.append((cx, cy))
