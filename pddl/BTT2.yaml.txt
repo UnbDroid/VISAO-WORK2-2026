@@ -1,0 +1,37 @@
+task_id: BTT2
+name: Basic Transportation Test II
+duration_min: 20
+
+active_service_areas:
+  - { id: WS1 }
+  - { id: WS2 }
+  - { id: WS3 }
+  - { id: WS7 }
+
+# seleção de 5 objetos (exemplo plausível dentro das faixas)
+objects:
+  - { id: 1,  class: BASIC }
+  - { id: 3,  class: BASIC }
+  - { id: 5,  class: BASIC }
+  - { id: 20, class: ADVANCED }
+  - { id: 22, class: ADVANCED }
+
+start_state:
+  WS1:
+    obj_ids: [1, 20]
+  WS2:
+    obj_ids: []
+  WS3:
+    obj_ids: [5]
+  WS7:
+    obj_ids: [3, 22]
+
+finish_state:
+  WS1: 
+    obj_ids: [3]
+  WS2:  
+    obj_ids: [1]
+  WS3:  
+    obj_ids: [20, 22]
+  WS7:  
+    obj_ids: [5]

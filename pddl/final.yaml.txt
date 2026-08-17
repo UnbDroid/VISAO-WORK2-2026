@@ -1,0 +1,92 @@
+task_id: FINAL
+name: Final test
+duration_min: 40
+
+active_service_areas:
+  - { id: WS_1 }
+  - { id: WS_2 }
+  - { id: WS_3 }
+  - { id: WS_4 }
+  - { id: WS_5 }
+  - { id: WS_6 }
+  - { id: WS_7 }
+  - { id: WS_8 }
+  - { id: PP }
+  - { id: SH_1 }
+  - { id: SH_2 }
+
+containers:
+  - { id: 10, color: BLUE, at_ws: WS_5 }
+  - { id: 16, color: RED,  at_ws: WS_7 }
+
+objects:
+  - { id: 1,  type: ATTC, class: BASIC,    color: BLUE }
+  - { id: 3,  type: ATTC, class: BASIC,    color: BLUE }
+  - { id: 5,  type: ATTC, class: BASIC,    color: RED }
+  - { id: 6,  type: ATTC, class: BASIC,    color: BLUE }
+  - { id: 19, type: ATTC, class: ADVANCED, color: RED }
+  - { id: 20, type: ATTC, class: ADVANCED, color: RED }
+  - { id: 21, type: ATTC, class: ADVANCED, color: BLUE }
+  - { id: 22, type: ATTC, class: ADVANCED, color: BLUE }
+  - { id: 23, type: ATTC, class: ADVANCED, color: BLUE }
+  - { id: 24, type: ATTC, class: ADVANCED, color: RED }
+
+start_state:
+  WS_1:
+    obj_ids: []
+  WS_2:
+    obj_ids: [1, 19]
+  WS_3:
+    obj_ids: []
+  WS_4:
+    obj_ids: [3]
+  WS_5:
+    obj_ids: [6]
+    cont_ids: [10]
+  WS_6:
+    obj_ids: [5]
+  WS_7:
+    obj_ids: [20]
+    cont_ids: [16]
+  WS_8:
+    obj_ids: [21, 22]
+  PP:
+    obj_ids: []
+  SH_1:
+    obj_ids: [23]
+    shelf_lower: true
+  SH_2:
+    obj_ids: [24]
+    shelf_lower: true
+
+finish_state:
+  WS_1:
+    obj_ids: []
+  WS_2:
+    obj_ids: []
+  WS_3:
+    obj_ids: []
+  WS_4:
+    obj_ids: []
+  WS_5:
+    obj_ids: [3, 6]
+    cont_ids: [10]
+    constraints:
+      - blue_container_10: [3, 6]
+  WS_6:
+    obj_ids: []
+  WS_7:
+    obj_ids: [19, 20]
+    cont_ids: [16]
+    constraints:
+      - red_container_16: [19, 20]
+  WS_8:
+    obj_ids: []
+  PP:
+    obj_ids: [1, 5, 21, 22]
+  SH_1:
+    obj_ids: [23]
+    shelf_top: true
+  SH_2:
+    obj_ids: [24]
+    shelf_top: true
