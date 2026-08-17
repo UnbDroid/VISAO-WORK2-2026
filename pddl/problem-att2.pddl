@@ -1,18 +1,13 @@
+; os numeros sao todos definidos aleatoriamente e deverao ser conferidos
+; de acordo com o que for pedido no momento da competicao
+
 (define (problem att2-instance) (:domain robocup-work-transport)
 
   (:objects
     robot1 - robot
-
-    ; localizações: start = pose inicial ; demais = active_service_areas
     start ws1 ws2 ws4 pp sh1 sh2 - location
-
-    ; capacidade de carga do robô
     s1 s2 s3 - slot
-
-    ; containers
     cont10 cont16 - container
-
-    ; objetos ATTC: 1, 3, 5, 6 | objetos ADVANCED: 19, 20, 21, 22
     obj1 obj3 obj5 obj6 obj19 obj20 obj21 obj22 - object
   )
 
@@ -56,6 +51,5 @@
 
       ; SH_2: [22] (já está no estado inicial, sem ação necessária)
       (obj-at obj22 sh2)
-    )
-  )
+  ))
 )

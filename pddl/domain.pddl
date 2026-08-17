@@ -4,10 +4,10 @@
 
   (:types
     robot
-    location   ; workstations (WS_x), prateleiras (SH_x), mesa de precisão (PP), etc.
+    location   ; workstations (WS_x), prateleiras (SH_x), mesa de precisão (PP), estado inicial (start)
     object     ; ATTCs e objetos ADVANCED (AprilTags)
-    container  ; caixas plásticas (ex: container azul/vermelho)
-    slot       ; unidades de capacidade de carga do robô (máx. 3, por regra)
+    container  ; containers azuis e vermelhos
+    slot       ; unidades de capacidade de armazenamento de cubos no robô (3))
   )
 
   (:predicates
@@ -18,16 +18,16 @@
     (holding ?r - robot ?o - object)                    ; robô segurando o objeto
     (holding-in ?r - robot ?o - object ?s - slot)        ; vincula objeto ao slot de carga usado
     (slot-free ?r - robot ?s - slot)                     ; slot de carga disponível
+    (on ?top - object ?bottom - object)                 ; ?top está empilhado sobre ?bottom
   )
 
-  ;; Move o robô entre duas localizações (grafo totalmente conectado nesta versão)
+
   (:action move
     :parameters (?r - robot ?from - location ?to - location)
     :precondition (at-robot ?r ?from)
     :effect (and (not (at-robot ?r ?from)) (at-robot ?r ?to))
   )
 
-  ;; Pega um objeto que está solto em uma localização (mesa, prateleira, etc.)
   (:action pick-from-location
     :parameters (?r - robot ?o - object ?l - location ?s - slot)
     :precondition (and (at-robot ?r ?l) (obj-at ?o ?l) (slot-free ?r ?s))
@@ -38,7 +38,6 @@
       (holding-in ?r ?o ?s))
   )
 
-  ;; Pega um objeto que está dentro de um container
   (:action pick-from-container
     :parameters (?r - robot ?o - object ?c - container ?l - location ?s - slot)
     :precondition (and
@@ -53,7 +52,6 @@
       (holding-in ?r ?o ?s))
   )
 
-  ;; Solta um objeto em uma localização (mesa, prateleira, mesa de precisão, etc.)
   (:action place-at-location
     :parameters (?r - robot ?o - object ?l - location ?s - slot)
     :precondition (and (at-robot ?r ?l) (holding ?r ?o) (holding-in ?r ?o ?s))
@@ -64,7 +62,6 @@
       (obj-at ?o ?l))
   )
 
-  ;; Coloca um objeto dentro de um container presente na localização atual
   (:action place-in-container
     :parameters (?r - robot ?o - object ?c - container ?l - location ?s - slot)
     :precondition (and
@@ -77,5 +74,34 @@
       (not (holding-in ?r ?o ?s))
       (slot-free ?r ?s)
       (in-container ?o ?c))
+  )
+
+  (:action stack
+    :parameters (?r - robot ?top - object ?bottom - object ?l - location ?s - slot)
+    :precondition (and
+      (at-robot ?r ?l)
+      (obj-at ?bottom ?l)
+      (holding ?r ?top)
+      (holding-in ?r ?top ?s))
+    :effect (and
+      (not (holding ?r ?top))
+      (not (holding-in ?r ?top ?s))
+      (slot-free ?r ?s)
+      (obj-at ?top ?l)
+      (on ?top ?bottom))
+  )
+
+  (:action unstack
+    :parameters (?r - robot ?top - object ?bottom - object ?l - location ?s - slot)
+    :precondition (and
+      (at-robot ?r ?l)
+      (on ?top ?bottom)
+      (obj-at ?top ?l)
+      (slot-free ?r ?s))
+    :effect (and
+      (not (on ?top ?bottom))
+      (not (obj-at ?top ?l))
+      (holding ?r ?top)
+      (holding-in ?r ?top ?s))
   )
 )

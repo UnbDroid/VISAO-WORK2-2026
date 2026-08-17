@@ -1,11 +1,11 @@
+; os numeros sao todos definidos aleatoriamente e deverao ser conferidos
+; de acordo com o que for pedido no momento da competicao
+
 (define (problem btt2-instance) (:domain robocup-work-transport)
 (:objects
     robot1 - robot
-
     start ws1 ws2 ws3 ws7 - location
-
     s1 s2 s3 - slot
-
     obj1 obj3 obj5 obj20 obj22 - object
 )
 
@@ -34,5 +34,4 @@
   
     (obj-at obj5 ws7)
 ))
-
 )
